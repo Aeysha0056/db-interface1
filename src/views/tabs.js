@@ -14,7 +14,11 @@ import {
   Modal,
   ModalHeader,
   ModalBody,
-  ModalFooter
+  ModalFooter,
+  Form,
+  FormGroup,
+  Label,
+  Input,
 } from "reactstrap";
 
 import Toast from "./components/toast";
@@ -24,7 +28,9 @@ class Tabs extends Component {
     super(props);
     this.state = {
       modal: false,
-      tabs: []
+      modalData: null,
+      tabs: [],
+      tabName: '',
     };
   }
 
@@ -32,10 +38,12 @@ class Tabs extends Component {
     this.getTabs();
   }
 
-  toggle = () => {
+  toggle = (modalData = null) => {
     this.setState({
-      modal: !this.state.modal
+      modal: !this.state.modal,
+      modalData
     });
+    console.log(modalData);
   };
 
   getTabs = () => {
@@ -76,12 +84,126 @@ class Tabs extends Component {
       });
   };
 
+  /**
+  * handling input change
+  */
+  handleInputChanged = (event) => {
+    let name = event.target.name
+    this.setState({ [name]: event.target.value })
+  }
+
+  /**
+   * add new tab to db
+   * @method
+   */
+  addNewTab = () => {
+    let tabs = this.state.tabs
+    let requestBody = {
+      query: `
+    mutation addTab ($tabName: String!)
+    { 
+      addTab (name: $tabName) {
+        _id
+        name
+      }
+    }`,
+      variables: {
+        "tabName": this.state.tabName
+      }
+
+    };
+
+    fetch("http://localhost:5000/graphql", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          this.setState({
+            fetching: false,
+            errorMsg: "Server response not received."
+          });
+          Toast("error", "Server response not received.");
+        }
+        return res.json();
+      })
+      .then(result => {
+        tabs.push(result.data.addTab)
+        this.setState({ fetching: true, tabs: tabs });
+        this.toggle()
+        Toast("success", "Successfully added!");
+      })
+      .catch(err => {
+        this.setState({ fetching: false, errorMsg: "Something Wrong!" });
+        console.log(err)
+        Toast("error", "Something Wrong!");
+      });
+  };
+
+  /**
+   * edit tab 
+   * @method
+   */
+  editTab = () => {
+    //to delete the item from tabs state list 
+    let tabs = this.state.tabs.filter(tab => tab._id !== this.state.modalData._id);
+    console.log(tabs)
+    let requestBody = {
+      query: `
+    mutation editTab ($id: String! $tabName: String!)
+    { 
+      editTab (id: $id name: $tabName) {
+        _id
+        name
+      }
+    }`,
+      variables: {
+        "tabName": this.state.tabName,
+        "id": this.state.modalData._id
+      }
+
+    };
+
+    fetch("http://localhost:5000/graphql", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          this.setState({
+            fetching: false,
+            errorMsg: "Server response not received."
+          });
+          Toast("error", "Server response not received.");
+        }
+        return res.json();
+      })
+      .then(result => {
+        tabs.push(result.data.editTab)
+        this.setState({ fetching: true, tabs: tabs });
+        this.toggle()
+        Toast("success", "Successfully updated!");
+      })
+      .catch(err => {
+        this.setState({ fetching: false, errorMsg: "Something Wrong!" });
+        console.log(err)
+        Toast("error", "Something Wrong!");
+      });
+  };
+
   render() {
+    console.log(this.state.tabName)
     return (
       <div className="animated fadeIn">
         <Row className="justify-content-end mr-2 mb-3">
           <Col className="col-12 col-sm-auto">
-            <Button onClick={this.toggle} className="mr-1" color="success">
+            <Button onClick={()=> this.toggle()} className="mr-1" color="success">
               <i className="fa fa-plus fa-sm mr-2"></i>New Tab
             </Button>
             <Modal
@@ -90,18 +212,25 @@ class Tabs extends Component {
               centered
               className=""
             >
-              <ModalHeader toggle={this.toggle}>New Tab</ModalHeader>
+              <ModalHeader toggle={this.toggle}>
+              {this.state.modalData ? `Edit ${this.state.modalData.name}` : "New Tab"}
+              </ModalHeader>
               <ModalBody>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-                enim ad minim veniam, quis nostrud exercitation ullamco laboris
-                nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor
-                in reprehenderit in voluptate velit esse cillum dolore eu fugiat
-                nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-                sunt in culpa qui officia deserunt mollit anim id est laborum.
+              <Form>
+                  <FormGroup>
+                    <Label for="tabName">Tab Name</Label>
+                    <Input
+                      type="text"
+                      name="tabName"
+                      id="tabName"
+                      defaultValue={this.state.modalData && this.state.modalData? this.state.modalData.name : null}
+                      onChange={this.handleInputChanged}
+                    />
+                  </FormGroup>
+                </Form>
               </ModalBody>
               <ModalFooter>
-                <Button color="success" onClick={this.toggle}>
+                <Button color="success" onClick={this.state.modalData? this.editTab : this.addNewTab}>
                   Save
                 </Button>{" "}
                 <Button color="danger" outline onClick={this.toggle}>
@@ -129,12 +258,26 @@ class Tabs extends Component {
                     <thead>
                       <tr>
                         <th>Name</th>
+                        <th></th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
                       {this.state.tabs.map(item => (
                         <tr key={item._id}>
                           <td>{item.name}</td>
+                          <td
+                            className="align-middle"
+                            onClick={() => this.toggle(item)}
+                          >
+                            <i className="fa fa-edit fa-lg mt-4 text-primary" />
+                          </td>
+                          <td
+                            className="align-middle"
+                            onClick={" "}
+                          >
+                            <i className="fa fa-trash fa-lg mt-4 text-primary" />
+                          </td>
                         </tr>
                       ))}
                     </tbody>

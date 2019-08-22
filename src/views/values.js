@@ -14,7 +14,11 @@ import {
   Modal,
   ModalHeader,
   ModalBody,
-  ModalFooter
+  ModalFooter,
+  Form,
+  FormGroup,
+  Label,
+  Input,
 } from "reactstrap";
 
 import Toast from "./components/toast";
@@ -24,6 +28,7 @@ class Values extends Component {
     super(props);
     this.state = {
       modal: false,
+      modalData: null,
       values: []
     };
   }
@@ -32,10 +37,12 @@ class Values extends Component {
     this.getValues();
   }
 
-  toggle = () => {
+  toggle = (modalData = null) => {
     this.setState({
-      modal: !this.state.modal
+      modal: !this.state.modal,
+      modalData
     });
+    console.log(modalData);
   };
 
   getValues = () => {
@@ -87,7 +94,7 @@ class Values extends Component {
       <div className="animated fadeIn">
         <Row className="justify-content-end mr-2 mb-3">
           <Col className="col-12 col-sm-auto">
-            <Button onClick={this.toggle} className="mr-1" color="success">
+            <Button onClick={()=> this.toggle()} className="mr-1" color="success">
               <i className="fa fa-plus fa-sm mr-2"></i>New Value
             </Button>
             <Modal
@@ -96,15 +103,28 @@ class Values extends Component {
               centered
               className=""
             >
-              <ModalHeader toggle={this.toggle}>New Value</ModalHeader>
+              <ModalHeader toggle={this.toggle}>
+              {this.state.modalData ? `Edit ${this.state.modalData.name}` : "New Value"}
+              </ModalHeader>
               <ModalBody>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+                {/*Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
                 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
                 enim ad minim veniam, quis nostrud exercitation ullamco laboris
                 nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor
                 in reprehenderit in voluptate velit esse cillum dolore eu fugiat
                 nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-                sunt in culpa qui officia deserunt mollit anim id est laborum.
+                sunt in culpa qui officia deserunt mollit anim id est laborum.*/}
+                <Form>
+                  <FormGroup>
+                    <Label for="valueName">Value Name</Label>
+                    <Input
+                      type="text"
+                      name="valueName"
+                      id="valueName"
+                      defaultValue={this.state.modalData && this.state.modalData.value ? this.state.modalData.value.name : null}
+                    />
+                  </FormGroup>
+                </Form>
               </ModalBody>
               <ModalFooter>
                 <Button color="success" onClick={this.toggle}>
@@ -136,6 +156,8 @@ class Values extends Component {
                       <tr>
                         <th>Value Name</th>
                         <th>Section</th>
+                        <th></th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -153,6 +175,18 @@ class Values extends Component {
                             ))}
                           </td>
                           <td className="align-middle">{section.name}</td>
+                          <td
+                            className="align-middle"
+                            onClick={() => this.toggle(section)}
+                          >
+                            <i className="fa fa-edit fa-lg mt-4 text-primary" />
+                          </td>
+                          <td
+                            className="align-middle"
+                            onClick={" "}
+                          >
+                            <i className="fa fa-trash fa-lg mt-4 text-primary" />
+                          </td>
                         </tr>
                       ))}
                       {/**this.state.values.map(section => {

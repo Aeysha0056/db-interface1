@@ -14,9 +14,14 @@ import {
   Modal,
   ModalHeader,
   ModalBody,
-  ModalFooter
+  ModalFooter,
+  Form,
+  FormGroup,
+  Label,
+  Input,
+  Dropdown, DropdownToggle, DropdownMenu, DropdownItem
 } from "reactstrap";
-
+//import { DropdownList } from "react-widgets";
 import Toast from "./components/toast";
 
 class Sections extends Component {
@@ -24,6 +29,8 @@ class Sections extends Component {
     super(props);
     this.state = {
       modal: false,
+      modalData: null,
+      dropdownOpen: false,
       sections: []
     };
   }
@@ -32,11 +39,20 @@ class Sections extends Component {
     this.getSections();
   }
 
-  toggle = () => {
+  toggle = (modalData = null) => {
     this.setState({
-      modal: !this.state.modal
+      modal: !this.state.modal,
+      modalData
     });
+    console.log(modalData);
   };
+
+  dropDownToggle() {
+    this.setState(prevState => ({
+      dropdownOpen: !prevState.dropdownOpen
+    }));
+  }
+
 
   getSections = () => {
     let requestBody = {
@@ -86,7 +102,7 @@ class Sections extends Component {
       <div className="animated fadeIn">
         <Row className="justify-content-end mr-2 mb-3">
           <Col className="col-12 col-sm-auto">
-            <Button onClick={this.toggle} className="mr-1" color="success">
+            <Button onClick={()=> this.toggle()} className="mr-1" color="success">
               <i className="fa fa-plus fa-sm mr-2"></i>New Section
             </Button>
             <Modal
@@ -95,15 +111,30 @@ class Sections extends Component {
               centered
               className=""
             >
-              <ModalHeader toggle={this.toggle}>New Section</ModalHeader>
+              <ModalHeader toggle={this.toggle}>
+              {this.state.modalData ? `Edit ${this.state.modalData.name}` : "New Section"}
+              </ModalHeader>
               <ModalBody>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-                enim ad minim veniam, quis nostrud exercitation ullamco laboris
-                nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor
-                in reprehenderit in voluptate velit esse cillum dolore eu fugiat
-                nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-                sunt in culpa qui officia deserunt mollit anim id est laborum.
+              <Form>
+                  <FormGroup>
+                    <Label for="sectionName">Section Name</Label>
+                    <Input
+                      type="text"
+                      name="sectionName"
+                      id="sectionName"
+                      defaultValue={this.state.modalData && this.state.modalData.section? this.state.modalData.section.map((section) => (section.name)) : null}
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label for="sectionType">Section Type</Label>
+                    <Input
+                      type="text"
+                      name="sectionType"
+                      id="sectionType"
+                      defaultValue={this.state.modalData && this.state.modalData.section? this.state.modalData.section.map(section => (section.type)) : null}
+                    />
+                  </FormGroup>
+                </Form>
               </ModalBody>
               <ModalFooter>
                 <Button color="success" onClick={this.toggle}>
@@ -136,6 +167,8 @@ class Sections extends Component {
                         <th>Section Name</th>
                         <th>Section Type</th>
                         <th>Tab</th>
+                        <th></th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -144,6 +177,18 @@ class Sections extends Component {
                           <td>{item.section.name}</td>
                           <td>{item.section.type}</td>
                           <td>{item.name}</td>
+                          <td
+                            className="align-middle"
+                            onClick={() => this.toggle(item)}
+                          >
+                            <i className="fa fa-edit fa-lg mt-4 text-primary" />
+                          </td>
+                          <td
+                            className="align-middle"
+                            onClick={" "}
+                          >
+                            <i className="fa fa-trash fa-lg mt-4 text-primary" />
+                          </td>
                         </tr>
                       ))}
                     </tbody>

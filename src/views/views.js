@@ -174,6 +174,7 @@ class Views extends Component {
                         <th>type</th>
                         <th>Value</th>
                         <th></th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -202,6 +203,12 @@ class Views extends Component {
                             onClick={() => this.toggle(item)}
                           >
                             <i className="fa fa-edit fa-lg mt-4 text-primary" />
+                          </td>
+                          <td
+                            className="align-middle"
+                            onClick={" "}
+                          >
+                            <i className="fa fa-trash fa-lg mt-4 text-primary" />
                           </td>
                         </tr>
                       ))}

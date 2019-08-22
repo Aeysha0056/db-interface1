@@ -34,6 +34,7 @@
     "react-router-config": "^5.0.1",
     "react-router-dom": "^5.0.1",
     "react-test-renderer": "^16.8.6",
+    "react-widgets": "^4.4.11",
     "reactstrap": "^8.0.0",
     "simple-line-icons": "^2.4.1",
     "sweetalert2": "^8.14.0",
