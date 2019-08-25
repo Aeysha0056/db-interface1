@@ -19,9 +19,7 @@ import {
   FormGroup,
   Label,
   Input,
-  Dropdown, DropdownToggle, DropdownMenu, DropdownItem
 } from "reactstrap";
-//import { DropdownList } from "react-widgets";
 import Toast from "./components/toast";
 
 class Sections extends Component {
@@ -30,7 +28,6 @@ class Sections extends Component {
     this.state = {
       modal: false,
       modalData: null,
-      dropdownOpen: false,
       sections: []
     };
   }
@@ -47,12 +44,14 @@ class Sections extends Component {
     console.log(modalData);
   };
 
-  dropDownToggle() {
-    this.setState(prevState => ({
-      dropdownOpen: !prevState.dropdownOpen
-    }));
-  }
-
+ 
+ /**
+  * handling input change
+  */
+ handleInputChanged = (event) => {
+  let name = event.target.name
+  this.setState({ [name]: event.target.value })
+}
 
   getSections = () => {
     let requestBody = {
@@ -60,6 +59,7 @@ class Sections extends Component {
       {
         tabs {
           name
+          _id
           section {
             name
             _id
@@ -97,6 +97,120 @@ class Sections extends Component {
       });
   };
 
+  /**
+    * add new section to db
+    * @method
+    */
+  addNewSection = () => {
+    let { sections, sectionName, sectionType } = this.state
+    let tab = sections.find(tab => tab.name === this.state.tabName);
+    console.log(tab)
+    let requestBody = {
+      query: `
+    mutation addSection ($tabId: String!, $sectionName: String!, $sectionType: String!)
+    { 
+      addSection (tabId: $tabId , name: $sectionName , type: $sectionType) {
+        _id
+        name
+        type
+      }
+    }`,
+      variables: {
+        "tabId": tab._id,
+        "sectionName": sectionName,
+        "sectionType": sectionType
+      }
+
+    };
+
+    fetch("http://localhost:5000/graphql", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          this.setState({
+            fetching: false,
+            errorMsg: "Server response not received."
+          });
+          Toast("error", "Server response not received.");
+        }
+        return res.json();
+      })
+      .then(result => {
+        tab.section = result.data.addSection
+        this.setState({ fetching: true, sections: sections });
+        this.toggle()
+        Toast("success", "Successfully added!");
+      })
+      .catch(err => {
+        this.setState({ fetching: false, errorMsg: "Something Wrong!" });
+        console.log(err)
+        Toast("error", "Something Wrong!");
+      });
+  };
+
+  /**
+  * edit sections info 
+  * @method
+  */
+  editSection = () => {
+    let { sectionName, sectionType, modalData } = this.state
+    //to delete the item from tabs state list 
+    let sections = this.state.sections.filter(tab => tab._id !== this.state.modalData._id);
+
+    let requestBody = {
+      query: `
+    mutation editSection ($id: String!, $sectionName: String, $sectionType: String)
+    { 
+      editSection (id: $id , name: $sectionName , type: $sectionType) {
+        _id
+        name
+        type
+      }
+    }`,
+      variables: {
+        "id": modalData.section._id,
+        "sectionName": sectionName ? sectionName : modalData.section.name,
+        "sectionType": sectionType ? sectionType : modalData.section.type
+      }
+
+    };
+
+    fetch("http://localhost:5000/graphql", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          this.setState({
+            fetching: false,
+            errorMsg: "Server response not received."
+          });
+          Toast("error", "Server response not received.");
+        }
+        return res.json();
+      })
+      .then(result => {
+        modalData.section = result.data.editSection
+        sections.push(modalData)
+        this.setState({ fetching: true, sections: sections });
+        this.toggle()
+        Toast("success", "Successfully updated!");
+      })
+      .catch(err => {
+        this.setState({ fetching: false, errorMsg: "Something Wrong!" });
+        console.log(err)
+        Toast("error", "Something Wrong!");
+      });
+  };
+
   render() {
     return (
       <div className="animated fadeIn">
@@ -117,27 +231,42 @@ class Sections extends Component {
               <ModalBody>
               <Form>
                   <FormGroup>
+                    <Label for="tabName">Select Tab</Label>
+                    <Input type="select" name="tabName" id="tabName"
+                     defaultValue={this.state.modalData && this.state.modalData.section? this.state.modalData.name : null}
+                     onChange={this.handleInputChanged}>
+                    {this.state.sections.map(item => (
+                      <option>{item.name}</option>
+                    ))}
+                    </Input>
+                  </FormGroup>
+                  <FormGroup>
                     <Label for="sectionName">Section Name</Label>
                     <Input
                       type="text"
                       name="sectionName"
                       id="sectionName"
-                      defaultValue={this.state.modalData && this.state.modalData.section? this.state.modalData.section.map((section) => (section.name)) : null}
+                      defaultValue={this.state.modalData && this.state.modalData.section? this.state.modalData.section.name : null}
+                      onChange={this.handleInputChanged}
                     />
                   </FormGroup>
                   <FormGroup>
                     <Label for="sectionType">Section Type</Label>
                     <Input
-                      type="text"
+                      type="select"
                       name="sectionType"
                       id="sectionType"
-                      defaultValue={this.state.modalData && this.state.modalData.section? this.state.modalData.section.map(section => (section.type)) : null}
-                    />
+                      defaultValue={this.state.modalData && this.state.modalData.section? this.state.modalData.section.type : null}
+                      onChange={this.handleInputChanged}
+                    >
+                    <option>single</option>
+                    <option>multi</option>
+                    </Input>
                   </FormGroup>
                 </Form>
               </ModalBody>
               <ModalFooter>
-                <Button color="success" onClick={this.toggle}>
+                <Button color="success" onClick={this.state.modalData? this.editSection : this.addNewSection}>
                   Save
                 </Button>{" "}
                 <Button color="danger" outline onClick={this.toggle}>
@@ -173,9 +302,9 @@ class Sections extends Component {
                     </thead>
                     <tbody>
                       {this.state.sections.map(item => (
-                        <tr key={item.section._id}>
-                          <td>{item.section.name}</td>
-                          <td>{item.section.type}</td>
+                        <tr key={item.section? item.section._id: null}>
+                          <td>{item.section? item.section.name: null}</td>
+                          <td>{item.section? item.section.type: null}</td>
                           <td>{item.name}</td>
                           <td
                             className="align-middle"
